@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEET Questions Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .option-correct {
+            background-color: #d1fae5;
+            border-color: #10b981;
+        }
+        .option-incorrect {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .subject-btn {
+            transition: all 0.2s ease;
+        }
+        .subject-btn:hover {
+            transform: translateY(-2px);
+        }
+        .active-subject {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-indigo-700 mb-2">NEET Questions Viewer</h1>
+            <p class="text-gray-600">Browse questions by subject, chapter, or NCERT page reference</p>
+        </header>
+
+        <!-- Subject Selection -->
+        <div class="flex justify-center gap-4 mb-8">
+            <button onclick="loadSubject('biology')" class="subject-btn bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-medium">
+                Biology
+            </button>
+            <button onclick="loadSubject('chemistry')" class="subject-btn bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium">
+                Chemistry
+            </button>
+            <button onclick="loadSubject('physics')" class="subject-btn bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg font-medium">
+                Physics
+            </button>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex border-b border-gray-200 mb-6">
+            <button id="tab-chapter" onclick="showView('chapter')" class="px-4 py-2 font-medium text-gray-600 hover:text-indigo-600 border-b-2 border-transparent hover:border-indigo-500">
+                Chapter-wise
+            </button>
+            <button id="tab-page" onclick="showView('page')" class="px-4 py-2 font-medium text-gray-600 hover:text-indigo-600 border-b-2 border-transparent hover:border-indigo-500">
+                Page-wise
+            </button>
+            <button id="tab-search" onclick="showView('search')" class="px-4 py-2 font-medium text-gray-600 hover:text-indigo-600 border-b-2 border-transparent hover:border-indigo-500">
+                Search
+            </button>
+        </div>
+
+        <!-- Content Area -->
+        <div id="content-area">
+            <!-- Initial content will be loaded here -->
+            <div class="text-center py-12 text-gray-500">
+                <i class="fas fa-book-open text-4xl mb-4"></i>
+                <p>Select a subject to begin</p>
+            </div>
+        </div>
+
+        <!-- Question Modal -->
+        <div id="question-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 id="modal-question-id" class="text-lg font-medium text-gray-500"></h3>
+                        <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div id="modal-question-content" class="mb-6"></div>
+                    <div id="modal-options" class="grid gap-3 mb-6"></div>
+                    <div id="modal-answer" class="hidden">
+                        <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-check-circle text-green-500"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-green-700">
+                                        <span class="font-medium">Correct Answer:</span> <span id="correct-answer"></span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-info-circle text-blue-500"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-blue-700">
+                                        <span class="font-medium">Explanation:</span> <span id="explanation-text"></span>
+                                    </p>
+                                    <p class="text-sm text-blue-700 mt-2">
+                                        <span class="font-medium">Reference:</span> <span id="reference-text"></span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end mt-4">
+                        <button id="show-answer-btn" onclick="showAnswer()" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                            Show Answer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentSubject = null;
+        let currentQuestions = [];
+        let currentView = null;
+
+        // DOM elements
+        const contentArea = document.getElementById('content-area');
+        const questionModal = document.getElementById('question-modal');
+        const modalQuestionContent = document.getElementById('modal-question-content');
+        const modalOptions = document.getElementById('modal-options');
+        const modalAnswer = document.getElementById('modal-answer');
+        const correctAnswer = document.getElementById('correct-answer');
+        const explantionText = document.getElementById('explanation-text');
+        const referenceText = document.getElementById('reference-text');
+        const showAnswerBtn = document.getElementById('show-answer-btn');
+        const modalQuestionId = document.getElementById('modal-question-id');
+
+        // Subject URLs
+        const subjectUrls = {
+            biology: 'https://itzfew.github.io/NEET-Questions/data/biology.json',
+            chemistry: 'https://itzfew.github.io/NEET-Questions/data/chemistry.json',
+            physics: 'https://itzfew.github.io/NEET-Questions/data/physics.json'
+        };
+
+        // Load a subject
+        async function loadSubject(subject) {
+            // Update UI
+            document.querySelectorAll('.subject-btn').forEach(btn => {
+                btn.classList.remove('active-subject');
+            });
+            event.target.classList.add('active-subject');
+            
+            currentSubject = subject;
+            
+            // Show loading state
+            contentArea.innerHTML = `
+                <div class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-4xl text-indigo-500 mb-4"></i>
+                    <p>Loading ${subject} questions...</p>
+                </div>
+            `;
+
+            try {
+                // Fetch questions
+                const response = await fetch(subjectUrls[subject]);
+                currentQuestions = await response.json();
+                
+                // Show chapter view by default
+                showView('chapter');
+            } catch (error) {
+                console.error('Error loading questions:', error);
+                contentArea.innerHTML = `
+                    <div class="text-center py-12 text-red-500">
+                        <i class="fas fa-exclamation-circle text-4xl mb-4"></i>
+                        <p>Failed to load questions. Please try again.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Show a specific view
+        function showView(view) {
+            currentView = view;
+            
+            // Update active tab
+            document.querySelectorAll('[id^="tab-"]').forEach(tab => {
+                tab.classList.remove('border-indigo-500', 'text-indigo-600');
+            });
+            document.getElementById(`tab-${view}`).classList.add('border-indigo-500', 'text-indigo-600');
+            
+            if (!currentSubject) {
+                contentArea.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="fas fa-book-open text-4xl mb-4"></i>
+                        <p>Select a subject to begin</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            switch(view) {
+                case 'chapter':
+                    showChapterView();
+                    break;
+                case 'page':
+                    showPageView();
+                    break;
+                case 'search':
+                    showSearchView();
+                    break;
+            }
+        }
+
+        // Show chapter view
+        function showChapterView() {
+            // Group questions by chapter/topic
+            const chapters = {};
+            
+            currentQuestions.forEach(question => {
+                const path = question.topic_name.split(' >> ');
+                let currentLevel = chapters;
+                
+                path.forEach((segment, index) => {
+                    if (!currentLevel[segment]) {
+                        currentLevel[segment] = {};
+                    }
+                    
+                    if (index === path.length - 1) {
+                        // Last segment - add questions here
+                        if (!currentLevel[segment].questions) {
+                            currentLevel[segment].questions = [];
+                        }
+                        currentLevel[segment].questions.push(question);
+                    } else {
+                        currentLevel = currentLevel[segment];
+                    }
+                });
+            });
+            
+            // Render chapter tree
+            contentArea.innerHTML = `
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">${capitalizeFirstLetter(currentSubject)} Chapters</h2>
+                    <div class="space-y-2">
+                        ${renderChapterTree(chapters)}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Recursive function to render chapter tree
+        function renderChapterTree(chapters, level = 0) {
+            let html = '';
+            
+            for (const chapter in chapters) {
+                const hasChildren = Object.keys(chapters[chapter]).length > 0 && !chapters[chapter].questions;
+                const hasQuestions = chapters[chapter].questions && chapters[chapter].questions.length > 0;
+                
+                html += `
+                    <div class="pl-${level * 4}">
+                        <div class="flex items-center py-2 px-3 rounded-md hover:bg-gray-50">
+                            <i class="fas fa-${hasChildren || hasQuestions ? 'folder' : 'file'} text-yellow-500 mr-2"></i>
+                            <span class="font-medium">${chapter}</span>
+                            ${hasQuestions ? `<span class="ml-auto bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-full">${chapters[chapter].questions.length} Qs</span>` : ''}
+                        </div>
+                        ${hasChildren ? renderChapterTree(chapters[chapter], level + 1) : ''}
+                        ${hasQuestions ? renderQuestionsList(chapters[chapter].questions) : ''}
+                    </div>
+                `;
+            }
+            
+            return html;
+        }
+
+        // Render questions list
+        function renderQuestionsList(questions) {
+            return `
+                <div class="ml-6 border-l-2 border-gray-200 pl-4 space-y-3 my-3">
+                    ${questions.map((question, index) => `
+                        <div onclick="openQuestionModal('${question.unique_id}')" class="cursor-pointer p-3 rounded-md hover:bg-gray-100 transition">
+                            <div class="flex items-start">
+                                <span class="text-gray-500 text-sm mr-2">${index + 1}.</span>
+                                <div>
+                                    <p class="text-gray-800">${question.question}</p>
+                                    <div class="flex flex-wrap gap-2 mt-2">
+                                        <span class="text-xs bg-gray-100 px-2 py-1 rounded">${question.difficulty_level}/5</span>
+                                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${question.quiz_type}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Show page view
+        function showPageView() {
+            // Group questions by NCERT page reference
+            const pages = {};
+            
+            currentQuestions.forEach(question => {
+                const pageRef = question.ncert22_page || question.ncert23_page || 'No reference';
+                if (!pages[pageRef]) {
+                    pages[pageRef] = [];
+                }
+                pages[pageRef].push(question);
+            });
+            
+            // Convert to array and sort
+            const sortedPages = Object.entries(pages).sort((a, b) => {
+                // Try to extract class and page numbers for sorting
+                const extractNumbers = (str) => {
+                    const match = str.match(/(\d+)-(\d+)/);
+                    return match ? [parseInt(match[1]), parseInt(match[2])] : [0, 0];
+                };
+                
+                const aNums = extractNumbers(a[0]);
+                const bNums = extractNumbers(b[0]);
+                
+                // Compare class first, then page
+                if (aNums[0] !== bNums[0]) return aNums[0] - bNums[0];
+                return aNums[1] - bNums[1];
+            });
+            
+            // Render page view
+            contentArea.innerHTML = `
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">${capitalizeFirstLetter(currentSubject)} by NCERT Page</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${sortedPages.map(([page, questions]) => `
+                            <div onclick="showPageQuestions('${page}')" class="cursor-pointer border rounded-lg p-4 hover:bg-gray-50 transition">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="font-medium text-gray-800">${page || 'No reference'}</h3>
+                                    <span class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-full">${questions.length} Qs</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Show questions for a specific page
+        function showPageQuestions(pageRef) {
+            const pageQuestions = currentQuestions.filter(q => 
+                (q.ncert22_page === pageRef) || (q.ncert23_page === pageRef)
+            );
+            
+            contentArea.innerHTML = `
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center mb-4">
+                        <button onclick="showView('page')" class="mr-2 text-indigo-600 hover:text-indigo-800">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <h2 class="text-xl font-semibold text-gray-800">${pageRef || 'No reference'}</h2>
+                    </div>
+                    <div class="space-y-4">
+                        ${pageQuestions.map((question, index) => `
+                            <div onclick="openQuestionModal('${question.unique_id}')" class="cursor-pointer p-4 border rounded-lg hover:bg-gray-50 transition">
+                                <div class="flex items-start">
+                                    <span class="text-gray-500 text-sm mr-2">${index + 1}.</span>
+                                    <div>
+                                        <p class="text-gray-800">${question.question}</p>
+                                        <div class="flex flex-wrap gap-2 mt-2">
+                                            <span class="text-xs bg-gray-100 px-2 py-1 rounded">${question.difficulty_level}/5</span>
+                                            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${question.quiz_type}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Show search view
+        function showSearchView() {
+            contentArea.innerHTML = `
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">Search ${capitalizeFirstLetter(currentSubject)} Questions</h2>
+                    <div class="mb-6">
+                        <div class="relative">
+                            <input type="text" id="search-input" placeholder="Search questions..." class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <button onclick="performSearch()" class="absolute right-2 top-2 text-gray-500 hover:text-indigo-600">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="search-results" class="space-y-4">
+                        <div class="text-center py-12 text-gray-400">
+                            <i class="fas fa-search text-4xl mb-4"></i>
+                            <p>Enter a search term to find questions</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add event listener for Enter key
+            document.getElementById('search-input').addEventListener('keyup', function(event) {
+                if (event.key === 'Enter') {
+                    performSearch();
+                }
+            });
+        }
+
+        // Perform search
+        function performSearch() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            if (!searchTerm.trim()) return;
+            
+            const results = currentQuestions.filter(q => 
+                q.question.toLowerCase().includes(searchTerm) ||
+                (q.option_a && q.option_a.toLowerCase().includes(searchTerm)) ||
+                (q.option_b && q.option_b.toLowerCase().includes(searchTerm)) ||
+                (q.option_c && q.option_c.toLowerCase().includes(searchTerm)) ||
+                (q.option_d && q.option_d.toLowerCase().includes(searchTerm)) ||
+                (q.answer && q.answer.toLowerCase().includes(searchTerm)) ||
+                (q.explanation && q.explanation.toLowerCase().includes(searchTerm)) ||
+                (q.topic_name && q.topic_name.toLowerCase().includes(searchTerm))
+            );
+            
+            const resultsContainer = document.getElementById('search-results');
+            
+            if (results.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="fas fa-exclamation-circle text-4xl mb-4"></i>
+                        <p>No questions found for "${searchTerm}"</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            resultsContainer.innerHTML = `
+                <div class="mb-4">
+                    <p class="text-sm text-gray-600">Found ${results.length} question${results.length !== 1 ? 's' : ''}</p>
+                </div>
+                <div class="space-y-4">
+                    ${results.map((question, index) => `
+                        <div onclick="openQuestionModal('${question.unique_id}')" class="cursor-pointer p-4 border rounded-lg hover:bg-gray-50 transition">
+                            <div class="flex items-start">
+                                <span class="text-gray-500 text-sm mr-2">${index + 1}.</span>
+                                <div>
+                                    <p class="text-gray-800">${question.question}</p>
+                                    <div class="flex flex-wrap gap-2 mt-2">
+                                        <span class="text-xs bg-gray-100 px-2 py-1 rounded">${question.difficulty_level}/5</span>
+                                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${question.quiz_type}</span>
+                                        ${question.topic_name ? `<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">${question.topic_name.split(' >> ')[0]}</span>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Open question modal
+        function openQuestionModal(questionId) {
+            const question = currentQuestions.find(q => q.unique_id === questionId);
+            if (!question) return;
+            
+            // Set modal content
+            modalQuestionId.textContent = `ID: ${question.unique_id}`;
+            modalQuestionContent.innerHTML = `
+                <p class="text-lg font-medium text-gray-800 mb-4">${question.question}</p>
+                ${question.topic_name ? `<p class="text-sm text-gray-500 mb-2">Topic: ${question.topic_name}</p>` : ''}
+                <div class="flex gap-2">
+                    <span class="text-xs bg-gray-100 px-2 py-1 rounded">Difficulty: ${question.difficulty_level}/5</span>
+                    <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${question.quiz_type}</span>
+                </div>
+            `;
+            
+            // Set options
+            if (question.quiz_type === 'mcq') {
+                modalOptions.innerHTML = `
+                    <div onclick="selectOption(this, '${question.answer}')" class="option p-3 border rounded-md cursor-pointer hover:bg-gray-50 transition" data-option="A">
+                        <span class="font-medium mr-2">A)</span> ${question.option_a}
+                    </div>
+                    <div onclick="selectOption(this, '${question.answer}')" class="option p-3 border rounded-md cursor-pointer hover:bg-gray-50 transition" data-option="B">
+                        <span class="font-medium mr-2">B)</span> ${question.option_b}
+                    </div>
+                    <div onclick="selectOption(this, '${question.answer}')" class="option p-3 border rounded-md cursor-pointer hover:bg-gray-50 transition" data-option="C">
+                        <span class="font-medium mr-2">C)</span> ${question.option_c}
+                    </div>
+                    <div onclick="selectOption(this, '${question.answer}')" class="option p-3 border rounded-md cursor-pointer hover:bg-gray-50 transition" data-option="D">
+                        <span class="font-medium mr-2">D)</span> ${question.option_d}
+                    </div>
+                `;
+            } else {
+                modalOptions.innerHTML = `
+                    <div class="p-4 bg-gray-50 rounded-md text-gray-600">
+                        <i class="fas fa-info-circle mr-2"></i> This is a subjective question. Check the answer below.
+                    </div>
+                `;
+            }
+            
+            // Set answer and explanation
+            correctAnswer.textContent = question.answer;
+            explantionText.textContent = question.explanation;
+            
+            // Extract reference from explanation
+            const referenceMatch = question.explanation.match(/\(Reference :(.*?)\)/);
+            if (referenceMatch) {
+                referenceText.textContent = referenceMatch[1];
+            } else {
+                referenceText.textContent = 'No reference provided';
+            }
+            
+            // Reset modal state
+            modalAnswer.classList.add('hidden');
+            showAnswerBtn.textContent = 'Show Answer';
+            showAnswerBtn.onclick = () => showAnswer();
+            
+            // Show modal
+            questionModal.classList.remove('hidden');
+        }
+
+        // Close modal
+        function closeModal() {
+            questionModal.classList.add('hidden');
+        }
+
+        // Select an option
+        function selectOption(element, correctAnswer) {
+            // Remove previous selections
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('option-correct', 'option-incorrect');
+            });
+            
+            const selectedOption = element.getAttribute('data-option');
+            const selectedText = element.textContent.trim().replace(/^[A-D]\)\s/, '');
+            
+            if (selectedText === correctAnswer) {
+                element.classList.add('option-correct');
+            } else {
+                element.classList.add('option-incorrect');
+                // Highlight correct answer
+                document.querySelectorAll('.option').forEach(opt => {
+                    const optionText = opt.textContent.trim().replace(/^[A-D]\)\s/, '');
+                    if (optionText === correctAnswer) {
+                        opt.classList.add('option-correct');
+                    }
+                });
+            }
+            
+            // Show answer section
+            modalAnswer.classList.remove('hidden');
+            showAnswerBtn.textContent = 'Close';
+            showAnswerBtn.onclick = closeModal;
+        }
+
+        // Show answer
+        function showAnswer() {
+            modalAnswer.classList.remove('hidden');
+            showAnswerBtn.textContent = 'Close';
+            showAnswerBtn.onclick = closeModal;
+        }
+
+        // Helper function to capitalize first letter
+        function capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+        // Close modal when clicking outside
+        questionModal.addEventListener('click', function(e) {
+            if (e.target === questionModal) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
