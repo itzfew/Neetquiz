@@ -1,4 +1,4 @@
-// utils.js
-function slugify(text) {
-    return text.toLowerCase().replace(/ /g, '-').replace(/[^\w-]/g, '');
+// Helper function to capitalize first letter
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
 }
