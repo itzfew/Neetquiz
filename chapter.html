@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEET Prep - Chapter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+    <script src="utils.js"></script>
+    <script src="script.js"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <header class="bg-blue-600 text-white p-4">
+        <h1 class="text-2xl font-bold text-center">NEET Prep - <span id="chapter-title"></span></h1>
+        <a id="back-link" class="text-sm underline">Back to Subject</a>
+    </header>
+    <main class="container mx-auto p-4">
+        <h2 class="text-xl font-semibold mb-4">Topics</h2>
+        <div id="topic-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+    </main>
+    <footer class="bg-gray-800 text-white p-4 text-center">
+        <p>&copy; 2025 NEET Prep. All rights reserved.</p>
+    </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const subject = params.get('subject');
+            const chapter = params.get('chapter');
+            document.getElementById('chapter-title').textContent = chapter.replace(/-/g, ' ').toUpperCase();
+            document.getElementById('back-link').href = `subject.html?subject=${subject}`;
+            loadTopics(subject, chapter);
+        });
+    </script>
+</body>
+</html>
