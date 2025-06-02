@@ -1,4 +1,4 @@
- // Global variables
+  // Global variables
 let currentSubject = null;
 let currentQuestions = [];
 let currentView = null;
