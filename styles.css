@@ -1,0 +1,24 @@
+/* styles.css */
+.question-card {
+    @apply bg-white p-4 rounded-lg shadow-md;
+}
+
+.option {
+    @apply p-2 rounded hover:bg-gray-200 cursor-pointer;
+}
+
+.option.correct {
+    @apply bg-green-100;
+}
+
+.option.incorrect {
+    @apply bg-red-100;
+}
+
+.explanation {
+    @apply mt-2 text-gray-600 hidden;
+}
+
+.explanation.show {
+    @apply block;
+}
