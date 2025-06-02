@@ -1,4 +1,4 @@
-// Show a specific view
+ // Show a specific view
 function showView(view) {
     currentView = view;
     
