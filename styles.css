@@ -1,24 +1,25 @@
-/* styles.css */
-.question-card {
-    @apply bg-white p-4 rounded-lg shadow-md;
+.option-correct {
+    background-color: #d1fae5;
+    border-color: #10b981;
 }
-
-.option {
-    @apply p-2 rounded hover:bg-gray-200 cursor-pointer;
+.option-incorrect {
+    background-color: #fee2e2;
+    border-color: #ef4444;
 }
-
-.option.correct {
-    @apply bg-green-100;
+.fade-in {
+    animation: fadeIn 0.3s ease-in-out;
 }
-
-.option.incorrect {
-    @apply bg-red-100;
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
-
-.explanation {
-    @apply mt-2 text-gray-600 hidden;
+.subject-btn {
+    transition: all 0.2s ease;
 }
-
-.explanation.show {
-    @apply block;
+.subject-btn:hover {
+    transform: translateY(-2px);
+}
+.active-subject {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px);
 }
